@@ -93,7 +93,7 @@ public class EsProductController {
         ProductEs productEs3 = new ProductEs();
         productEs3.setSkuId(3L);
         productEs3.setCode("TY0001");
-        productEs3.setName("3M 塑胶桶 透明");
+        productEs3.setName("3M 大塑胶桶 透明");
         productEs3.setDeleted(0);
         productEs3.setPrice(BigDecimal.ONE);
 
@@ -102,7 +102,7 @@ public class EsProductController {
         ProductEs productEs4 = new ProductEs();
         productEs4.setSkuId(4L);
         productEs4.setCode("TY0001");
-        productEs4.setName("3M 滤棉塑胶盖 501 塑胶 透明");
+        productEs4.setName("3M 滤棉塑胶盖 501  透明");
         productEs4.setDeleted(0);
         productEs4.setPrice(BigDecimal.ZERO);
         addList.add(productEs4);
