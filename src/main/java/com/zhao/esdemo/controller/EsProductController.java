@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -75,6 +76,7 @@ public class EsProductController {
         productEs1.setSkuId(1L);
         productEs1.setCode("TY0001");
         productEs1.setName("德力西/DELIXI 小型断路器 DZ47SN1C6 DZ47s 6A AC230/400 6 1P C型");
+        productEs1.setPrice(BigDecimal.ONE);
         productEs1.setDeleted(0);
         addList.add(productEs1);
 
@@ -83,14 +85,18 @@ public class EsProductController {
         productEs2.setCode("TY0001");
         productEs2.setName("闪电 皮带蜡 Q/IEPZ 03-91 330g 蜡状");
         productEs2.setDeleted(0);
+        productEs2.setPrice(BigDecimal.TEN);
+
         addList.add(productEs2);
 
 
         ProductEs productEs3 = new ProductEs();
         productEs3.setSkuId(3L);
         productEs3.setCode("TY0001");
-        productEs3.setName("前卫机电 稳流电源 WLY-3A AC220V±10% 0-3A 280*120*240mm");
+        productEs3.setName("3M 塑胶桶 透明");
         productEs3.setDeleted(0);
+        productEs3.setPrice(BigDecimal.ONE);
+
         addList.add(productEs3);
 
         ProductEs productEs4 = new ProductEs();
@@ -98,6 +104,7 @@ public class EsProductController {
         productEs4.setCode("TY0001");
         productEs4.setName("3M 滤棉塑胶盖 501 塑胶 透明");
         productEs4.setDeleted(0);
+        productEs4.setPrice(BigDecimal.ZERO);
         addList.add(productEs4);
 
         for (ProductEs product : addList) {
@@ -142,24 +149,33 @@ public class EsProductController {
         Map<String, Object> params = new HashMap<>(16);
 
 
-        //切词
-        if (search.getNameAndCode() != null && search.getNameAndCodeLike().length() > 0) {
+        if (search.getNameAndCode() != null && search.getNameAndCode().length() > 0) {
             String keywordTemp = search.getNameAndCode().toLowerCase();
+            params.put("nameAndCode", "*" + search.getNameAndCode().toLowerCase() + "*");
+        }
+
+        if (search.getNameAndCodeIk() != null && search.getNameAndCodeIk().length() > 0) {
+            params.put("nameAndCodeIk", search.getNameAndCodeIk().toLowerCase());
+        }
+
+        //切词
+        if (search.getNameAndCodeLike() != null && search.getNameAndCodeLike().length() > 0) {
+            String keywordTemp = search.getNameAndCodeLike().toLowerCase();
             params.put("nameAndCodeLike", wordSegmentation(keywordTemp));
         }
         //取前100条
         params.put("from", 0);
         params.put("size", 99);
         //返回字段过滤
-        params.put("fields", " \"_source\":{\"excludes\":[\"nameAnalysis\",\"nameAndCodeAnalysis\"]}");
+        params.put("fields", " \"_source\":{\"excludes\":[\"nameAndCode\",\"nameAndCodeIk\",\"nameAndCodeLike\"]}");
 
         ClientInterface clientUtil = ElasticSearchHelper.getConfigRestClientUtil("esmapper/ProductEsMapper.xml");
         ESDatas<ProductEs> esDatas = clientUtil.searchList(
                 INDEX + "/_search", "searchPageDatasAnd", params, ProductEs.class);
         //获取结果对象列表
         List<ProductEs> resultlist = esDatas.getDatas();
-
-        return null;
+        log.info("返回：" + esDatas.getRestResponse().toString());
+        return resultlist;
     }
 
     private String wordSegmentation(String keywordTemp) {

@@ -36,7 +36,11 @@
 
                             "nameAndCode":{
                              "type": "text",
-                            "analyzer": "standard"
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword"
+                                }
+                            }
                         },
                             "nameAndCodeIk":{
                             "type": "text",
@@ -54,12 +58,6 @@
     </property>
 
 
-    <property name="queryPid"><![CDATA[{
-        "query": { "match": { "pid": #[pid] } }
-     }]]>
-    </property>
-
-
     <!--
    分页查询 主要给前端使用 空格切分and效果
 -->
@@ -74,35 +72,33 @@
                                    "deleted":0
                                    }
                              }
-                             #if($nameLike)
+                             #if($nameAndCodeLike)
                             ,{
                                 "match_phrase_prefix": {
-                                    "nameAnalysis": {
+                                    "nameAndCode": {
                                     "max_expansions": 10,
-                                    "query": #[nameLike]
+                                    "query": #[nameAndCodeLike]
                                      }
                                 }
                             }
                             #end
 
-                              #if($keywords && $keywords.size() > 0)
-                             ,
-                                     #foreach($word in $keywords)
-                                         #if($velocityCount > 0),#end
-                                          {"match_phrase_prefix": {
-                                            "nameAndCodeAnalysis": {
-                                            "max_expansions": 10,
-                                              "query": #[keywords[$velocityCount]]
-                                            }
-                                          }
-                                        }
-                                   #end
+                             #if($nameAndCodeIk)
+                            ,{
+                                "match_phrase_prefix": {
+                                    "nameAndCodeIk": {
+                                    "max_expansions": 10,
+                                    "query": #[nameAndCodeIk]
+                                     }
+                                }
+                            }
+                            #end
 
-                               #end
 
-                            #if($codeLike)
+                            #if($nameAndCode)
                                    , {"wildcard": {
-                                             "code": #[codeLike]
+
+                                             "nameAndCode.keyword": #[nameAndCode]
                                                      }
                                        }
                             #end

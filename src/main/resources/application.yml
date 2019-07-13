@@ -50,4 +50,4 @@ spring:
         validateAfterInactivity: 2000
       dslfile:
         # dsl配置文件热加载扫描时间间隔，毫秒为单位，默认5秒扫描一次，<= 0时关闭扫描机制，生产环境需关闭
-        refreshInterval: 10
+        refreshInterval: 3
