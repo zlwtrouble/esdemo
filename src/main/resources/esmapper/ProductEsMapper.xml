@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<properties>
+    <!--
+        创建的索引表结构
+    -->
+    <property name="createMapping">
+        <![CDATA[{
+            "settings": {
+                "number_of_shards": 3,
+                "index.refresh_interval": "1s"
+            },
+            "mappings": {
+                #[type]: {
+                    "properties": {
+                        "code":{
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword"
+                                }
+                            }
+                        },
+                         "name":{
+                            "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword"
+                                }
+                            }
+                        },
+
+                        "price":{
+                            "type": "double"
+                        },
+
+                            "nameAndCode":{
+                             "type": "text",
+                            "analyzer": "standard"
+                        },
+                            "nameAndCodeIk":{
+                            "type": "text",
+                            "analyzer": "ik_max_word"
+                        },
+                         "nameAndCodeLike":{
+                            "type": "text",
+                            "analyzer": "standard"
+                        }
+
+                    }
+                }
+            }
+        }]]>
+    </property>
+
+
+    <property name="queryPid"><![CDATA[{
+        "query": { "match": { "pid": #[pid] } }
+     }]]>
+    </property>
+
+
+    <!--
+   分页查询 主要给前端使用 空格切分and效果
+-->
+    <property name="searchPageDatasAnd">
+        <![CDATA[{
+
+            "query": {
+                "bool": {
+                     "must": [
+                            {
+                                  "match":{
+                                   "deleted":0
+                                   }
+                             }
+                             #if($nameLike)
+                            ,{
+                                "match_phrase_prefix": {
+                                    "nameAnalysis": {
+                                    "max_expansions": 10,
+                                    "query": #[nameLike]
+                                     }
+                                }
+                            }
+                            #end
+
+                              #if($keywords && $keywords.size() > 0)
+                             ,
+                                     #foreach($word in $keywords)
+                                         #if($velocityCount > 0),#end
+                                          {"match_phrase_prefix": {
+                                            "nameAndCodeAnalysis": {
+                                            "max_expansions": 10,
+                                              "query": #[keywords[$velocityCount]]
+                                            }
+                                          }
+                                        }
+                                   #end
+
+                               #end
+
+                            #if($codeLike)
+                                   , {"wildcard": {
+                                             "code": #[codeLike]
+                                                     }
+                                       }
+                            #end
+                            #if($state)
+                             ,{
+                                  "match":{
+                                   "state":#[state]
+                                   }
+                             }
+                             #end
+                            ]
+
+                          }
+            },
+            "from":#[from],
+
+            "size":#[size]
+
+           #if($fields)
+            ,$fields
+            #end
+
+        }]]>
+    </property>
+
+
+</properties>

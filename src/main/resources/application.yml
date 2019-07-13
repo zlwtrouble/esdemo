@@ -1,0 +1,53 @@
+spring:
+  elasticsearch:
+    bboss:
+      #es默认不开启用户名和密码
+      elasticPassword: changeme
+      elasticUser: elastic
+      #连接es服务
+      elasticsearch:
+        dateFormat: yyyy.MM.dd
+        discoverHost: false
+        rest:
+          hostNames: 192.168.173.77:9200
+        scrollBlockedWaitTimeout: 0
+        scrollThreadCount: 200
+        scrollThreadQueue: 200
+        showTemplate: true
+        sliceScrollBlockedWaitTimeout: 0
+        sliceScrollThreadCount: 100
+        sliceScrollThreadQueue: 100
+        timeZone: Asia/Shanghai
+        ttl: 2d
+        #连接池配置
+      http:
+        #申请连接超时时间，设置为0不超时，单位：毫秒
+        connectionRequestTimeout: 5000
+        customHttpRequestRetryHandler:                org.frameworkset.spi.remote.http.ConnectionResetHttpRequestRetryHandler
+        # 每个地址允许的最大连接数
+        defaultMaxPerRoute: 200
+        hostnameVerifier:
+        keepAlive: 3600000
+        keyPassword:
+        keystore:
+        maxHeaderCount: 200
+        maxLineLength: -1
+        # 总共允许的最大连接数
+        maxTotal: 400
+        #当前连接失败重试次数
+        retryTime: 1
+        retryInterval: 1000
+        soKeepAlive: false
+        soReuseAddress: false
+        #每次获取connection时校验连接，true，校验，默认false
+        staleConnectionCheckEnabled: false
+        timeToLive: 3600000
+        #建立连接超时时间，单位：毫秒
+        timeoutConnection: 5000
+        #socket通讯超时时间
+        timeoutSocket: 5000
+        #空闲连接保活校验频率 单位毫秒
+        validateAfterInactivity: 2000
+      dslfile:
+        # dsl配置文件热加载扫描时间间隔，毫秒为单位，默认5秒扫描一次，<= 0时关闭扫描机制，生产环境需关闭
+        refreshInterval: 10
