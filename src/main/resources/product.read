@@ -28,3 +28,9 @@ GET /product_demo/_search
 
 #http://127.0.0.1:8080/product/addProductList
 
+FH 防化
+聚氯乙
+TY2550
+
+http://127.0.0.1:8080/product/queryProductList?nameAndCodeLike=TY22550
+
