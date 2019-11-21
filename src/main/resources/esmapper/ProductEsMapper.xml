@@ -13,6 +13,23 @@
             "mappings": {
                 #[type]: {
                     "properties": {
+                        "nameAndCode":{
+                             "type": "text",
+                            "fields": {
+                                "keyword": {
+                                    "type": "keyword"
+                                }
+                            }
+                        },
+                        "nameAndCodeIk":{
+                            "type": "text",
+                            "analyzer": "ik_max_word"
+                        },
+                         "nameAndCodeLike":{
+                            "type": "text",
+                            "analyzer": "standard"
+                        },
+
                         "code":{
                             "type": "text",
                             "fields": {
@@ -32,25 +49,7 @@
 
                         "price":{
                             "type": "double"
-                        },
-
-                            "nameAndCode":{
-                             "type": "text",
-                            "fields": {
-                                "keyword": {
-                                    "type": "keyword"
-                                }
-                            }
-                        },
-                            "nameAndCodeIk":{
-                            "type": "text",
-                            "analyzer": "ik_max_word"
-                        },
-                         "nameAndCodeLike":{
-                            "type": "text",
-                            "analyzer": "standard"
                         }
-
                     }
                 }
             }
@@ -74,9 +73,9 @@
                              }
                              #if($nameAndCodeLike)
                             ,{
-                                "match_phrase_prefix": {
-                                    "nameAndCode": {
-                                    "max_expansions": 10,
+                                "match": {
+                                    "nameAndCodeLike": {
+
                                     "query": #[nameAndCodeLike]
                                      }
                                 }
@@ -85,7 +84,7 @@
 
                              #if($nameAndCodeIk)
                             ,{
-                                "match_phrase_prefix": {
+                                "match": {
                                     "nameAndCodeIk": {
                                     "max_expansions": 10,
                                     "query": #[nameAndCodeIk]

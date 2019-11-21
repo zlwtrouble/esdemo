@@ -1,17 +1,22 @@
 package com.zhao.esdemo.controller;
 
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
+import com.zhao.esdemo.base.Pager;
 import com.zhao.esdemo.base.ProductEs;
+import com.zhao.esdemo.base.dto.ProductSearchDto;
 import lombok.extern.slf4j.Slf4j;
 import org.frameworkset.elasticsearch.ElasticSearchHelper;
 import org.frameworkset.elasticsearch.client.ClientInterface;
 import org.frameworkset.elasticsearch.entity.ESDatas;
+import org.springframework.http.*;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestTemplate;
 
-import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,12 +39,12 @@ public class EsProductController {
     private static final String TYPE = "product_demo";
 
     /**
-     * 初始化
+     * 创建INDEX
      *
-     * @return 商品列表
+     * @return java.lang.String
      */
     @GetMapping("initProduct")
-    public Object initProduct() throws InterruptedException {
+    public String initProduct() throws InterruptedException {
         //删除index(删除表)
         try {
             ElasticSearchHelper.getRestClientUtil().dropIndice(INDEX);
@@ -59,107 +64,94 @@ public class EsProductController {
         ClientInterface clientUtil = ElasticSearchHelper.getRestClientUtil();
         clientUtil.updateIndiceSetting(INDEX, "max_result_window", 2000000);
 
-        //查询index属性
         String indexSetting = clientUtil.getIndiceSetting(INDEX);
-        log.info(indexSetting);
-
-        //批量新增商品文档
-        String result = this.addProductList();
-        return result;
+        log.info("初始化index完成，index属性{}",indexSetting);
+        return "end";
 
     }
 
-    private String addProductList() {
-        List<ProductEs> addList = new ArrayList<>();
+    /**
+     * 写入数据
+     *
+     * @return String
+     */
+    @GetMapping("addProductList")
+    public String addProductList() {
+        int count = 0;
+        RestTemplate restTemplate = new RestTemplate();
+        for (int i = 1; i <= 17; i++) {
+            String url = "http://192.168.13.149:8011/skuPendingDocumentApi/getSimpleProductByIdsPage";
+            ProductSearchDto productSearchDto = new ProductSearchDto();
+            Pager pager = new Pager();
+            pager.setPageIndex(i);
+            pager.setPageSize(10000);
+            productSearchDto.setPager(pager);
+            productSearchDto.setDeleted(0);
+            HttpHeaders requestHeaders = new HttpHeaders();
+            requestHeaders.setContentType(MediaType.parseMediaType("application/json; charset=UTF-8"));
+            HttpEntity<String> requestEntity = new HttpEntity<>(JSON.toJSONString(productSearchDto), requestHeaders);
+            ResponseEntity<JSONObject> exchange = restTemplate.exchange(url, HttpMethod.POST, requestEntity, JSONObject.class);
 
-        ProductEs productEs1 = new ProductEs();
-        productEs1.setSkuId(1L);
-        productEs1.setCode("TY0001");
-        productEs1.setName("德力西/DELIXI 小型断路器 DZ47SN1C6 DZ47s 6A AC230/400 6 1P C型");
-        productEs1.setPrice(BigDecimal.ONE);
-        productEs1.setDeleted(0);
-        addList.add(productEs1);
-
-        ProductEs productEs2 = new ProductEs();
-        productEs2.setSkuId(2L);
-        productEs2.setCode("TY0001");
-        productEs2.setName("闪电 皮带蜡 Q/IEPZ 03-91 330g 蜡状");
-        productEs2.setDeleted(0);
-        productEs2.setPrice(BigDecimal.TEN);
-
-        addList.add(productEs2);
-
-
-        ProductEs productEs3 = new ProductEs();
-        productEs3.setSkuId(3L);
-        productEs3.setCode("TY0001");
-        productEs3.setName("3M 大塑胶桶 透明");
-        productEs3.setDeleted(0);
-        productEs3.setPrice(BigDecimal.ONE);
-
-        addList.add(productEs3);
-
-        ProductEs productEs4 = new ProductEs();
-        productEs4.setSkuId(4L);
-        productEs4.setCode("TY0001");
-        productEs4.setName("3M 滤棉塑胶盖 501  透明");
-        productEs4.setDeleted(0);
-        productEs4.setPrice(BigDecimal.ZERO);
-        addList.add(productEs4);
-
-        for (ProductEs product : addList) {
-            product.setNameAndCode(product.getCode() + product.getName());
-            product.setNameAndCodeIk(product.getNameAndCode());
-            product.setNameAndCodeLike(product.getNameAndCode());
-            if (product.getNameAndCode() != null) {
-                char[] chars = product.getNameAndCode().toCharArray();
-                StringBuilder stringBuilder = new StringBuilder();
-                for (char c : chars) {
-                    stringBuilder.append(c).append(" ");
+            JSONObject body = exchange.getBody();
+            if (body != null) {
+                Object list = body.get("list");
+                List<ProductEs> productEsList = JSON.parseArray(JSON.toJSONString(list), ProductEs.class);
+                if (!CollectionUtils.isEmpty(productEsList)) {
+                    for (ProductEs product : productEsList) {
+                        count++;
+                        product.setNameAndCode(product.getCode() + product.getName());
+                        product.setNameAndCodeIk(product.getNameAndCode());
+                        product.setNameAndCodeLike(product.getNameAndCode());
+                        if (product.getNameAndCode() != null) {
+                            char[] chars = product.getNameAndCode().toCharArray();
+                            StringBuilder stringBuilder = new StringBuilder();
+                            //加入空格让默认分词器对每个字符分词
+                            for (char c : chars) {
+                                stringBuilder.append(c).append(" ");
+                            }
+                            product.setNameAndCodeLike(stringBuilder.toString());
+                        }
+                    }
+                    ClientInterface clientUtil = ElasticSearchHelper.getRestClientUtil();
+                    String response = clientUtil.addDocuments(INDEX, TYPE, productEsList);
+                    log.info(response);
                 }
-                product.setNameAndCodeLike(stringBuilder.toString());
             }
         }
-
-        ClientInterface clientUtil = ElasticSearchHelper.getRestClientUtil();
-        String response = clientUtil.addDocuments(INDEX, TYPE, addList);
-        log.info(response);
-        return response;
-
+        log.info("本次写入：{}条", count);
+        return "end";
 
     }
 
 
     /**
-     * 前端商品名称模糊查询列表
+     * 关键字模糊搜索
      *
      * @return 商品列表
      */
     @GetMapping("queryProductList")
     public Object queryProductList(ProductEs search) {
-
-        List<ProductEs> productList = this.getProductList(search);
-        return productList;
-
+       Map<String,Object> result = this.getProductList(search);
+        return result;
     }
 
 
-    private List<ProductEs> getProductList(ProductEs search) {
-
+    private  Map<String,Object> getProductList(ProductEs search) {
+        Map<String,Object> result=new HashMap<>(16);
         Map<String, Object> params = new HashMap<>(16);
-
-
         if (search.getNameAndCode() != null && search.getNameAndCode().length() > 0) {
-            String keywordTemp = search.getNameAndCode().toLowerCase();
             params.put("nameAndCode", "*" + search.getNameAndCode().toLowerCase() + "*");
         }
 
         if (search.getNameAndCodeIk() != null && search.getNameAndCodeIk().length() > 0) {
+            //中文分词词，只能对符合分词规律的进行分词，未被分词的将无法搜索到，不同于模糊搜索
+            //比如
             params.put("nameAndCodeIk", search.getNameAndCodeIk().toLowerCase());
         }
 
         //切词
         if (search.getNameAndCodeLike() != null && search.getNameAndCodeLike().length() > 0) {
+            //利用相关度评分法实现模糊查询效果（在匹配索引时词出现的顺序一致，出现的评率高）
             String keywordTemp = search.getNameAndCodeLike().toLowerCase();
             params.put("nameAndCodeLike", wordSegmentation(keywordTemp));
         }
@@ -174,8 +166,11 @@ public class EsProductController {
                 INDEX + "/_search", "searchPageDatasAnd", params, ProductEs.class);
         //获取结果对象列表
         List<ProductEs> resultlist = esDatas.getDatas();
+        result.put("total", esDatas.getTotalSize());
+        result.put("detail",resultlist);
+
         log.info("返回：" + esDatas.getRestResponse().toString());
-        return resultlist;
+        return result;
     }
 
     private String wordSegmentation(String keywordTemp) {
